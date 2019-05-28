@@ -7,8 +7,8 @@
 //--- INIZIALIZAZIONE MOTORI ---//
 int motorA1 = 11; // Motore B2
 int motorA2 = 10; // Motore B1
-int motorB1 = 5; // Motore A1
-int motorB2 = 6; // Motore A2
+int motorB1 = 6; // Motore A1
+int motorB2 = 5; // Motore A2
 int vel = 255; // Speed Of Motors (0-255)
 int state = '0'; // Initialise Motors
 
@@ -132,54 +132,72 @@ void getButtonState(int pulsantePremuto)
   }
 }
 
-void convertiAssiInMotoreDXeSX(int y, int x)
+void convertiAssiInMotoreDXeSX(int x, int y)
 {
   int motoreDX = 0;
   int motoreSX = 0;
   
-  int gapSterzo = 10; // range valori 0 - 100;
-  int gapAcceleratore = 10;
+  int gapSterzo = 20; // range valori 0 - 100;
+  int gapAcceleratore = 20;
+
+  float coefficienteDX = 2.55;
+  float coefficienteSX = 2.55;
   
-  if(-gapSterzo <= y && y <= gapSterzo) // fascia verticale centrale per dare la stessa accelerazione ai motori
+  if(-gapSterzo <= x && x <= gapSterzo) // fascia verticale centrale per dare la stessa accelerazione ai motori
   {
-    if(x < -gapAcceleratore || gapAcceleratore < x) // fascia interte orizzontale per muovere i motori solo se c'è una velocità minima abbastanza elevata
+    if(y < -gapAcceleratore || gapAcceleratore < y) // fascia interte orizzontale per muovere i motori solo se c'è una velocità minima abbastanza elevata
     {
-      motoreDX = x;
-      motoreSX = x;
+      motoreDX = y;
+      motoreSX = y;
     }
   }
   else
   {
-    if(-gapAcceleratore <= x && x <= gapAcceleratore) // fascia di sterzo orizzontale destra e sinistra, quando il joystick è in questa zona il robot ruoterà su sè stesso a velocità diverse
+    if(-gapAcceleratore <= y && y <= gapAcceleratore) // fascia di sterzo orizzontale destra e sinistra, quando il joystick è in questa zona il robot ruoterà su sè stesso a velocità diverse
     {
-      motoreDX = y;
-      motoreSX = -y;
+      if(x < -gapSterzo) // area di sterzo sinistra
+      {
+        motoreDX = -x;
+        motoreSX = 0;
+      }
+      else if(gapSterzo < x) // area di sterzo destra
+      {
+        motoreDX = 0;
+        motoreSX = x;
+      }
+      
     }
     else
-    {
-      float coefficienteDX = 2.5;
-      float coefficienteSX = 2.5;
-      
+    { 
       // una delle ruote rimarrà a piena potenza, l'altra avrà una potenza ridotta
-      if(y < -gapSterzo) // area di sterzo sinistra
+      if(x < -gapSterzo) // area di sterzo sinistra
       {
-        coefficienteDX = 1;
-        coefficienteSX = (float)((float)(y + 100) / (float)(100));
+        coefficienteDX = 2.55;
+        coefficienteSX = (float)((float)(x + 100) / (float)(100));
+        motoreDX = y;
+        motoreSX = y;
       }
-      if(gapSterzo < y) // area di sterzo destra
+      else if(gapSterzo < x) // area di sterzo destra
       {
-         coefficienteDX = (float)((float)(100 - y) / (float)(100));
-         coefficienteSX = 1;
+         coefficienteDX = (float)((float)(100 - x) / (float)(100));
+         coefficienteSX = 2.55;
+         motoreDX = y;
+         motoreSX = y;
       }
 
-      motoreDX = x * coefficienteDX;
-      motoreSX = x * coefficienteSX;
       //Serial.print("cSX ");
       //Serial.print(coefficienteDX);
       //Serial.print(", cDX ");
       //Serial.println(coefficienteDX);
     }
+
+      
   }
+
+   motoreDX = motoreDX * coefficienteDX;
+   motoreSX = motoreSX * coefficienteSX;
+
+
 
 //GESTISCO I MOTORI DX E SX
 
@@ -192,7 +210,7 @@ void convertiAssiInMotoreDXeSX(int y, int x)
   if(motoreDX < 0)
     {
       analogWrite(motorA1, 0); 
-      analogWrite(motorA2, motoreDX);
+      analogWrite(motorA2, -motoreDX);
     }
   if(motoreDX == 0)
     {
@@ -204,13 +222,13 @@ void convertiAssiInMotoreDXeSX(int y, int x)
 
   if (motoreSX > 0)
     {
-      analogWrite(motorB1, motoreSX); 
+      analogWrite(motorB1, motoreSX);
       analogWrite(motorB2, 0); 
     }
   if(motoreSX < 0)
     {
       analogWrite(motorB1, 0); 
-      analogWrite(motorB2, motoreSX);
+      analogWrite(motorB2, -motoreSX);
     }
   if(motoreSX == 0)
     {
